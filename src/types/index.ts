@@ -22,6 +22,15 @@ export interface Product {
   quantity: number;
 }
 
+export interface InventoryProduct {
+  id: string;
+  productType: string;
+  color: string;
+  quantity: number;
+  timestamp: string;
+  createdBy: string;
+}
+
 export interface User {
   id: string;
   email: string;
