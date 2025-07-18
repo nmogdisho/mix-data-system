@@ -12,7 +12,7 @@ const fallbackColorOptions = [
 
 const fallbackInterlockTypes = [
   'Block Interlock',
-  'Buuor Interlock',
+  'Buuro Interlock',
   'Daimond Interlock',
   'Tiiba Talyaani Interlock',
   'York Shir Interlock',
