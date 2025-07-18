@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { X, Package, Palette, Grid } from 'lucide-react';
 import { useMixData } from '../../hooks/useMixData';
+import { useInventoryProducts } from '../../hooks/useInventoryProducts';
+import { useColors } from '../../hooks/useValidationData';
 import type { MixData } from '../../types';
 
 interface FilteredProductsModalProps {
@@ -11,17 +13,19 @@ interface FilteredProductsModalProps {
 const FilteredProductsModal: React.FC<FilteredProductsModalProps> = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState<'color' | 'product'>('color');
   const { data, isLoading } = useMixData(1, 1000); // Get all data for totals
+  const { data: inventoryProducts, isLoading: inventoryLoading } = useInventoryProducts();
+  const { data: colors } = useColors();
 
   if (!isOpen) return null;
 
   // Create color mapping from database data
-  const colorMap: Record<string, string> = colors.reduce((acc, color) => {
+  const colorMap: Record<string, string> = colors?.reduce((acc, color) => {
     acc[color.name] = color.hex_code || '#9ca3af';
     return acc;
   }, { 'No Color': '#9ca3af' } as Record<string, string>);
   
   // Fallback color mapping
-  const FallBackcolorMap: Record<string, string> = {
+  const fallbackColorMap: Record<string, string> = {
     'No Color': '#9ca3af',
     'Red': '#ef4444',
     'Pure Red': '#dc2626',
@@ -32,11 +36,12 @@ const FilteredProductsModal: React.FC<FilteredProductsModalProps> = ({ isOpen, o
 
   // Calculate totals grouped by color
   const calculateColorTotals = () => {
-    if (!data?.data) return {};
+    if (!data?.data && !inventoryProducts) return {};
 
     const groupedData: Record<string, Record<string, Record<string, number>>> = {};
 
-    data.data.forEach((mix: MixData) => {
+    // Add products from mix data
+    data?.data?.forEach((mix: MixData) => {
       const color = mix.measurements.colorType || 'No Color';
       const mixType = mix.mixType;
 
@@ -55,16 +60,35 @@ const FilteredProductsModal: React.FC<FilteredProductsModalProps> = ({ isOpen, o
       }
     });
 
+    // Add inventory products
+    inventoryProducts?.forEach(product => {
+      const color = product.color || 'No Color';
+      // Determine mix type based on product type
+      const isInterlockProduct = ['Block Interlock', 'Buuor Interlock', 'Daimond Interlock', 'Tiiba Talyaani Interlock', 'York Shir Interlock', 'Garden'].includes(product.productType);
+      const mixType = isInterlockProduct ? 'interlock' : 'boards/tiir';
+
+      if (!groupedData[color]) {
+        groupedData[color] = {};
+      }
+      if (!groupedData[color][mixType]) {
+        groupedData[color][mixType] = {};
+      }
+
+      const key = product.productType;
+      groupedData[color][mixType][key] = (groupedData[color][mixType][key] || 0) + product.quantity;
+    });
+
     return groupedData;
   };
 
   // Calculate totals grouped by product type
   const calculateProductTotals = () => {
-    if (!data?.data) return {};
+    if (!data?.data && !inventoryProducts) return {};
 
     const groupedData: Record<string, Record<string, number>> = {};
 
-    data.data.forEach((mix: MixData) => {
+    // Add products from mix data
+    data?.data?.forEach((mix: MixData) => {
       const color = mix.measurements.colorType || 'No Color';
 
       if (mix.measurements.products) {
@@ -78,6 +102,18 @@ const FilteredProductsModal: React.FC<FilteredProductsModalProps> = ({ isOpen, o
           groupedData[productType][color] = (groupedData[productType][color] || 0) + product.quantity;
         });
       }
+    });
+
+    // Add inventory products
+    inventoryProducts?.forEach(product => {
+      const color = product.color || 'No Color';
+      const productType = product.productType;
+      
+      if (!groupedData[productType]) {
+        groupedData[productType] = {};
+      }
+      
+      groupedData[productType][color] = (groupedData[productType][color] || 0) + product.quantity;
     });
 
     return groupedData;
@@ -124,7 +160,7 @@ const FilteredProductsModal: React.FC<FilteredProductsModalProps> = ({ isOpen, o
               <div 
                 className="w-6 h-6 rounded-full border-2 border-gray-300 shadow-sm"
                 style={{ 
-                  backgroundColor: colorMap[color] || '#9ca3af',
+                  backgroundColor: colorMap[color] || fallbackColorMap[color] || '#9ca3af',
                   border: color === 'White' ? '2px solid #d1d5db' : '2px solid transparent'
                 }}
               ></div>
@@ -150,7 +186,7 @@ const FilteredProductsModal: React.FC<FilteredProductsModalProps> = ({ isOpen, o
                           <div 
                             className="w-4 h-4 rounded-full border shadow-sm"
                             style={{ 
-                              backgroundColor: colorMap[color] || '#9ca3af',
+                              backgroundColor: colorMap[color] || fallbackColorMap[color] || '#9ca3af',
                               border: color === 'White' ? '1px solid #d1d5db' : '1px solid transparent'
                             }}
                           ></div>
@@ -198,7 +234,7 @@ const FilteredProductsModal: React.FC<FilteredProductsModalProps> = ({ isOpen, o
                     <div 
                       className="w-5 h-5 rounded-full border shadow-sm"
                       style={{ 
-                        backgroundColor: colorMap[color] || '#9ca3af',
+                        backgroundColor: colorMap[color] || fallbackColorMap[color] || '#9ca3af',
                         border: color === 'White' ? '2px solid #d1d5db' : '2px solid transparent'
                       }}
                     ></div>
@@ -279,7 +315,7 @@ const FilteredProductsModal: React.FC<FilteredProductsModalProps> = ({ isOpen, o
 
         {/* Content */}
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
-          {isLoading ? (
+          {isLoading || inventoryLoading ? (
             <div className="flex justify-center items-center h-32">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
             </div>

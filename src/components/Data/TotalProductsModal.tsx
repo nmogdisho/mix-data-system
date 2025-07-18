@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, Package } from 'lucide-react';
 import { useMixData } from '../../hooks/useMixData';
+import { useInventoryProducts } from '../../hooks/useInventoryProducts';
 import type { MixData } from '../../types';
 
 interface TotalProductsModalProps {
@@ -10,17 +11,19 @@ interface TotalProductsModalProps {
 
 const TotalProductsModal: React.FC<TotalProductsModalProps> = ({ isOpen, onClose }) => {
   const { data, isLoading } = useMixData(1, 1000); // Get all data for totals
+  const { data: inventoryProducts, isLoading: inventoryLoading } = useInventoryProducts();
 
   if (!isOpen) return null;
 
   // Calculate totals for all product types
   const calculateTotals = () => {
-    if (!data?.data) return { interlockTotals: {}, boardsTiirTotals: {} };
+    if (!data?.data && !inventoryProducts) return { interlockTotals: {}, boardsTiirTotals: {} };
 
     const interlockTotals: Record<string, number> = {};
     const boardsTiirTotals: Record<string, number> = {};
 
-    data.data.forEach((mix: MixData) => {
+    // Add products from mix data
+    data?.data?.forEach((mix: MixData) => {
       if (mix.measurements.products) {
         mix.measurements.products.forEach(product => {
           if (mix.mixType === 'interlock') {
@@ -29,6 +32,18 @@ const TotalProductsModal: React.FC<TotalProductsModalProps> = ({ isOpen, onClose
             boardsTiirTotals[product.type] = (boardsTiirTotals[product.type] || 0) + product.quantity;
           }
         });
+      }
+    });
+
+    // Add inventory products - categorize based on product type
+    inventoryProducts?.forEach(product => {
+      // Determine category based on product type (you may need to adjust this logic)
+      const isInterlockProduct = ['Block Interlock', 'Buuor Interlock', 'Daimond Interlock', 'Tiiba Talyaani Interlock', 'York Shir Interlock', 'Garden'].includes(product.productType);
+      
+      if (isInterlockProduct) {
+        interlockTotals[product.productType] = (interlockTotals[product.productType] || 0) + product.quantity;
+      } else {
+        boardsTiirTotals[product.productType] = (boardsTiirTotals[product.productType] || 0) + product.quantity;
       }
     });
 
@@ -60,7 +75,7 @@ const TotalProductsModal: React.FC<TotalProductsModalProps> = ({ isOpen, onClose
 
         {/* Content */}
         <div className="p-6 overflow-y-auto max-h-[calc(80vh-120px)]">
-          {isLoading ? (
+          {isLoading || inventoryLoading ? (
             <div className="flex justify-center items-center h-32">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#090040]"></div>
             </div>
