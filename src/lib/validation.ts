@@ -50,7 +50,7 @@ export const getBoardsTiirTypes = (products: Product[]): string[] => {
     .map(product => product.name);
 };
 
-// Product schema for both interlock and boards/tiir
+// Product schema for both interlock and boards
 const productSchema = z.object({
   type: z.string().min(1, 'Product type is required'),
   quantity: z.number().min(0, 'Quantity must be positive').max(9999, 'Quantity too large'),
