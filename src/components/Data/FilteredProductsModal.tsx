@@ -21,7 +21,7 @@ const FilteredProductsModal: React.FC<FilteredProductsModalProps> = ({ isOpen, o
   }, { 'No Color': '#9ca3af' } as Record<string, string>);
   
   // Fallback color mapping
-  const colorMap: Record<string, string> = {
+  const FallBackcolorMap: Record<string, string> = {
     'No Color': '#9ca3af',
     'Red': '#ef4444',
     'Pure Red': '#dc2626',
