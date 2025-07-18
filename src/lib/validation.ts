@@ -96,5 +96,3 @@ export const mixDataSchema = z.object({
   message: "Cannot select the same product type twice",
   path: ['products']
 });
-
-export type MixDataFormInput = z.infer<typeof mixDataSchema>;
