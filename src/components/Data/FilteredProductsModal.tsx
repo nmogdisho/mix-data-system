@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { X, Package, Palette, Grid } from 'lucide-react';
 import { useMixData } from '../../hooks/useMixData';
-import { useColors } from '../../hooks/useValidationData';
 import type { MixData } from '../../types';
 
 interface FilteredProductsModalProps {
@@ -12,7 +11,6 @@ interface FilteredProductsModalProps {
 const FilteredProductsModal: React.FC<FilteredProductsModalProps> = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState<'color' | 'product'>('color');
   const { data, isLoading } = useMixData(1, 1000); // Get all data for totals
-  const { data: colors = [] } = useColors();
 
   if (!isOpen) return null;
 
@@ -21,6 +19,16 @@ const FilteredProductsModal: React.FC<FilteredProductsModalProps> = ({ isOpen, o
     acc[color.name] = color.hex_code || '#9ca3af';
     return acc;
   }, { 'No Color': '#9ca3af' } as Record<string, string>);
+  
+  // Fallback color mapping
+  const colorMap: Record<string, string> = {
+    'No Color': '#9ca3af',
+    'Red': '#ef4444',
+    'Pure Red': '#dc2626',
+    'White': '#f8fafc',
+    'Black': '#1f2937',
+    'Yellow': '#eab308'
+  };
 
   // Calculate totals grouped by color
   const calculateColorTotals = () => {

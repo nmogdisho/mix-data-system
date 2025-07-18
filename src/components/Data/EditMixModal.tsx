@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { X, Save, AlertCircle, CheckCircle, Palette, Plus, Trash2, Package } from 'lucide-react';
-import { createMixDataSchema, getColorOptions, getInterlockTypes, getBoardsTiirTypes, type MixDataFormInput } from '../../lib/validation';
+import { mixDataSchema, getColorOptions, getInterlockTypes, getBoardsTiirTypes, type MixDataFormInput } from '../../lib/validation';
 import { useUpdateMixData } from '../../hooks/useMixData';
-import { useProducts, useColors } from '../../hooks/useValidationData';
 import type { MixData } from '../../types';
 
 interface EditMixModalProps {
@@ -20,18 +19,6 @@ const EditMixModal: React.FC<EditMixModalProps> = ({ isOpen, onClose, mixData })
   } | null>(null);
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
 
-  // Fetch dynamic validation data
-  const { data: products = [], isLoading: productsLoading } = useProducts();
-  const { data: colors = [], isLoading: colorsLoading } = useColors();
-
-  // Derive validation options from database data
-  const colorOptions = getColorOptions(colors);
-  const interlockTypes = getInterlockTypes(products);
-  const boardsTiirTypes = getBoardsTiirTypes(products);
-
-  // Create dynamic schema
-  const validationSchema = createMixDataSchema(products, colors);
-
   const updateMixData = useUpdateMixData();
 
   const {
@@ -44,7 +31,7 @@ const EditMixModal: React.FC<EditMixModalProps> = ({ isOpen, onClose, mixData })
     trigger,
     formState: { errors },
   } = useForm<MixDataFormInput>({
-    resolver: zodResolver(validationSchema),
+    resolver: zodResolver(mixDataSchema),
     mode: 'onChange',
   });
 
@@ -55,6 +42,11 @@ const EditMixModal: React.FC<EditMixModalProps> = ({ isOpen, onClose, mixData })
 
   const mixType = watch('mixType');
   const watchedProducts = watch('products') || [];
+  
+  // Use fallback data for now
+  const colorOptions = getColorOptions([]);
+  const interlockTypes = getInterlockTypes([]);
+  const boardsTiirTypes = getBoardsTiirTypes([]);
 
   // Initialize form with existing data
   useEffect(() => {
@@ -192,13 +184,6 @@ const EditMixModal: React.FC<EditMixModalProps> = ({ isOpen, onClose, mixData })
 
         {/* Content */}
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-180px)]">
-          {/* Loading state */}
-          {(productsLoading || colorsLoading) && (
-            <div className="flex justify-center items-center h-32">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#090040]"></div>
-            </div>
-          )}
-
           {/* Notification */}
           {notification && (
             <div className={`mb-6 p-4 rounded-lg flex items-center space-x-3 ${
