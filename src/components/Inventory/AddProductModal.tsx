@@ -227,8 +227,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose }) =>
           </button>
           <button
             onClick={handleSubmit(onSubmit)}
-            disabled={createInventoryProduct.isPending}
-            className="flex items-center space-x-2 px-6 py-2 bg-[#090040] text-white rounded-lg hover:bg-[#090040]/90 disabled:opacity-50 transition-colors"
+            disabled={createInventoryProduct.isPending || productsLoading || colorsLoading || !products || !colors}            className="flex items-center space-x-2 px-6 py-2 bg-[#090040] text-white rounded-lg hover:bg-[#090040]/90 disabled:opacity-50 transition-colors"
           >
             <Save className="h-4 w-4" />
             <span>
