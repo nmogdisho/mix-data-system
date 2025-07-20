@@ -107,6 +107,8 @@ export const useUpdateMixData = () => {
         .select()
         .single();
 
+      console.log(data)
+
       if (error) {
         throw new Error(`Failed to update mix data: ${error.message}`);
       }
