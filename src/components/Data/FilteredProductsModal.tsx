@@ -19,19 +19,11 @@ const FilteredProductsModal: React.FC<FilteredProductsModalProps> = ({ isOpen, o
   if (!isOpen) return null;
 
   // Create color mapping from database data
-  const colorMap: Record<string, string> = colors?.reduce((acc, color) => {
+  const colorMap: Record<string, string> = colors ? colors.reduce((acc, color) => {
     acc[color.name] = color.hex_code || '#9ca3af';
     return acc;
-  }, { 'No Color': '#9ca3af' } as Record<string, string>);
-  
-  // Fallback color mapping
-  const fallbackColorMap: Record<string, string> = {
+  }, { 'No Color': '#9ca3af' } as Record<string, string>) : {
     'No Color': '#9ca3af',
-    'Red': '#ef4444',
-    'Pure Red': '#dc2626',
-    'White': '#f8fafc',
-    'Black': '#1f2937',
-    'Yellow': '#eab308'
   };
 
   // Calculate totals grouped by color
@@ -160,7 +152,7 @@ const FilteredProductsModal: React.FC<FilteredProductsModalProps> = ({ isOpen, o
               <div 
                 className="w-6 h-6 rounded-full border-2 border-gray-300 shadow-sm"
                 style={{ 
-                  backgroundColor: colorMap[color] || fallbackColorMap[color] || '#9ca3af',
+                  backgroundColor: colorMap[color] || '#9ca3af',
                   border: color === 'White' ? '2px solid #d1d5db' : '2px solid transparent'
                 }}
               ></div>
@@ -186,7 +178,7 @@ const FilteredProductsModal: React.FC<FilteredProductsModalProps> = ({ isOpen, o
                           <div 
                             className="w-4 h-4 rounded-full border shadow-sm"
                             style={{ 
-                              backgroundColor: colorMap[color] || fallbackColorMap[color] || '#9ca3af',
+                              backgroundColor: colorMap[color] || '#9ca3af',
                               border: color === 'White' ? '1px solid #d1d5db' : '1px solid transparent'
                             }}
                           ></div>
@@ -234,7 +226,7 @@ const FilteredProductsModal: React.FC<FilteredProductsModalProps> = ({ isOpen, o
                     <div 
                       className="w-5 h-5 rounded-full border shadow-sm"
                       style={{ 
-                        backgroundColor: colorMap[color] || fallbackColorMap[color] || '#9ca3af',
+                        backgroundColor: colorMap[color] || '#9ca3af',
                         border: color === 'White' ? '2px solid #d1d5db' : '2px solid transparent'
                       }}
                     ></div>
