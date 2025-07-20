@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Save, AlertCircle, CheckCircle, Palette, Plus, Trash2, Package } from 'lucide-react';
-import { mixDataSchema, getColorOptions, getInterlockTypes, getBoardsTiirTypes, type MixDataFormInput } from '../../lib/validation';
+import { createMixDataSchema, getColorOptions, getInterlockTypes, getBoardsTiirTypes, type MixDataFormInput } from '../../lib/validation';
 import { useCreateMixData } from '../../hooks/useMixData';
+import { useProducts, useColors } from '../../hooks/useValidationData';
 
 const MixEntryForm: React.FC = () => {
   const [notification, setNotification] = useState<{
@@ -13,6 +14,10 @@ const MixEntryForm: React.FC = () => {
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
 
   const createMixData = useCreateMixData();
+  
+  // Fetch validation data from database
+  const { data: products, isLoading: productsLoading, error: productsError } = useProducts();
+  const { data: colors, isLoading: colorsLoading, error: colorsError } = useColors();
 
   const {
     register,
@@ -24,7 +29,7 @@ const MixEntryForm: React.FC = () => {
     trigger,
     formState: { errors, isValid },
   } = useForm<MixDataFormInput>({
-    resolver: zodResolver(mixDataSchema),
+    resolver: zodResolver(createMixDataSchema(products, colors)),
     mode: 'onChange',
     defaultValues: {
       mixType: 'interlock',
@@ -46,11 +51,11 @@ const MixEntryForm: React.FC = () => {
 
   const mixType = watch('mixType');
   const watchedProducts = watch('products') || [];
-  
-  // Use fallback data for now
-  const colorOptions = getColorOptions([]);
-  const interlockTypes = getInterlockTypes([]);
-  const boardsTiirTypes = getBoardsTiirTypes([]);
+
+  // Get options from database data
+  const colorOptions = colors ? getColorOptions(colors) : [];
+  const interlockTypes = products ? getInterlockTypes(products) : [];
+  const boardsTiirTypes = products ? getBoardsTiirTypes(products) : [];
 
   // Reset color type and products when mix type changes
   React.useEffect(() => {
@@ -133,6 +138,33 @@ const MixEntryForm: React.FC = () => {
     }
     return 'border-gray-300 focus:ring-[#090040] focus:border-[#090040]';
   };
+
+  // Show loading state while fetching validation data
+  if (productsLoading || colorsLoading) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#090040]"></div>
+          <span className="ml-4 text-gray-600">Loading form data...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if data fetching failed
+  if (productsError || colorsError) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="text-center py-12">
+          <AlertCircle className="h-16 w-16 mx-auto mb-4 text-red-500" />
+          <p className="text-red-600 text-lg">Failed to load form data</p>
+          <p className="text-gray-500 text-sm mt-2">
+            {productsError?.message || colorsError?.message || 'Please check your connection and try again'}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto">

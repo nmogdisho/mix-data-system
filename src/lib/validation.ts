@@ -1,50 +1,18 @@
 import { z } from 'zod';
 import type { Product, Color } from './supabase';
 
-// Fallback data for when database is not available
-const fallbackColorOptions = [
-  'Red',
-  'Pure Red',
-  'White',
-  'Black',
-  'Yellow'
-] as const;
-
-const fallbackInterlockTypes = [
-  'Block Interlock',
-  'Buuro Interlock',
-  'Daimond Interlock',
-  'Tiiba Talyaani Interlock',
-  'York Shir Interlock',
-  'Garden'
-] as const;
-
-const fallbackBoardsTiirTypes = [
-  'Tiir',
-  'Boards'
-] as const;
-
 // Helper functions to extract options from database data
 export const getColorOptions = (colors: Color[]): string[] => {
-  if (!colors || colors.length === 0) {
-    return [...fallbackColorOptions];
-  }
   return colors.map(color => color.name);
 };
 
 export const getInterlockTypes = (products: Product[]): string[] => {
-  if (!products || products.length === 0) {
-    return [...fallbackInterlockTypes];
-  }
   return products
     .filter(product => product.category === 'Interlock')
     .map(product => product.name);
 };
 
 export const getBoardsTiirTypes = (products: Product[]): string[] => {
-  if (!products || products.length === 0) {
-    return [...fallbackBoardsTiirTypes];
-  }
   return products
     .filter(product => product.category === 'Board/Tiir')
     .map(product => product.name);
@@ -143,5 +111,5 @@ export const createMixDataSchema = (products: Product[] = [], colors: Color[] = 
   });
 };
 
-// Default schema using fallback data for backward compatibility
+// Default schema - requires data to be passed in
 export const mixDataSchema = createMixDataSchema();
