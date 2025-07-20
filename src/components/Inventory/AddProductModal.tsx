@@ -3,7 +3,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { X, Save, AlertCircle, CheckCircle, Package } from 'lucide-react';
-import { useProducts, useColors } from '../../hooks/useValidationData';
 import { useCreateInventoryProduct } from '../../hooks/useInventoryProducts';
 
 interface AddProductModalProps {
@@ -26,8 +25,26 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose }) =>
     message: string;
   } | null>(null);
 
-  const { data: products, isLoading: productsLoading } = useProducts();
-  const { data: colors, isLoading: colorsLoading } = useColors();
+  // Use fallback data directly since database might not be available in deployment
+  const products = [
+    { id: '1', name: 'Block Interlock', category: 'Interlock' },
+    { id: '2', name: 'Buuor Interlock', category: 'Interlock' },
+    { id: '3', name: 'Daimond Interlock', category: 'Interlock' },
+    { id: '4', name: 'Tiiba Talyaani Interlock', category: 'Interlock' },
+    { id: '5', name: 'York Shir Interlock', category: 'Interlock' },
+    { id: '6', name: 'Garden', category: 'Interlock' },
+    { id: '7', name: 'Tiir', category: 'Board/Tiir' },
+    { id: '8', name: 'Boards', category: 'Board/Tiir' },
+  ];
+
+  const colors = [
+    { id: '1', name: 'Red' },
+    { id: '2', name: 'Pure Red' },
+    { id: '3', name: 'White' },
+    { id: '4', name: 'Black' },
+    { id: '5', name: 'Yellow' },
+  ];
+
   const createInventoryProduct = useCreateInventoryProduct();
 
   const {
@@ -73,8 +90,6 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose }) =>
 
   if (!isOpen) return null;
 
-  const isLoading = productsLoading || colorsLoading;
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
@@ -114,90 +129,84 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose }) =>
             </div>
           )}
 
-          {isLoading ? (
-            <div className="flex justify-center items-center h-32">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#090040]"></div>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            {/* Product Type */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Product Type
+              </label>
+              <select
+                {...register('productType')}
+                className={`w-full px-3 py-2 border rounded-lg transition-colors ${
+                  errors.productType
+                    ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+                    : 'border-gray-300 focus:ring-[#090040] focus:border-[#090040]'
+                }`}
+              >
+                <option value="">Select product type</option>
+                {products.map((product) => (
+                  <option key={product.id} value={product.name}>
+                    {product.name}
+                  </option>
+                ))}
+              </select>
+              {errors.productType && (
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.productType.message}
+                </p>
+              )}
             </div>
-          ) : (
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              {/* Product Type */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Product Type
-                </label>
-                <select
-                  {...register('productType')}
-                  className={`w-full px-3 py-2 border rounded-lg transition-colors ${
-                    errors.productType
-                      ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
-                      : 'border-gray-300 focus:ring-[#090040] focus:border-[#090040]'
-                  }`}
-                >
-                  <option value="">Select product type</option>
-                  {products?.map((product) => (
-                    <option key={product.id} value={product.name}>
-                      {product.name}
-                    </option>
-                  ))}
-                </select>
-                {errors.productType && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {errors.productType.message}
-                  </p>
-                )}
-              </div>
 
-              {/* Color */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Color
-                </label>
-                <select
-                  {...register('color')}
-                  className={`w-full px-3 py-2 border rounded-lg transition-colors ${
-                    errors.color
-                      ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
-                      : 'border-gray-300 focus:ring-[#090040] focus:border-[#090040]'
-                  }`}
-                >
-                  <option value="">Select color</option>
-                  {colors?.map((color) => (
-                    <option key={color.id} value={color.name}>
-                      {color.name}
-                    </option>
-                  ))}
-                </select>
-                {errors.color && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {errors.color.message}
-                  </p>
-                )}
-              </div>
+            {/* Color */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Color
+              </label>
+              <select
+                {...register('color')}
+                className={`w-full px-3 py-2 border rounded-lg transition-colors ${
+                  errors.color
+                    ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+                    : 'border-gray-300 focus:ring-[#090040] focus:border-[#090040]'
+                }`}
+              >
+                <option value="">Select color</option>
+                {colors.map((color) => (
+                  <option key={color.id} value={color.name}>
+                    {color.name}
+                  </option>
+                ))}
+              </select>
+              {errors.color && (
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.color.message}
+                </p>
+              )}
+            </div>
 
-              {/* Quantity */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Quantity
-                </label>
-                <input
-                  type="number"
-                  step="1"
-                  {...register('quantity', { valueAsNumber: true })}
-                  className={`w-full px-3 py-2 border rounded-lg transition-colors ${
-                    errors.quantity
-                      ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
-                      : 'border-gray-300 focus:ring-[#090040] focus:border-[#090040]'
-                  }`}
-                  placeholder="1"
-                />
-                {errors.quantity && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {errors.quantity.message}
-                  </p>
-                )}
-              </div>
-            </form>
-          )}
+            {/* Quantity */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Quantity
+              </label>
+              <input
+                type="number"
+                step="1"
+                {...register('quantity', { valueAsNumber: true })}
+                className={`w-full px-3 py-2 border rounded-lg transition-colors ${
+                  errors.quantity
+                    ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+                    : 'border-gray-300 focus:ring-[#090040] focus:border-[#090040]'
+                }`}
+                placeholder="1"
+              />
+              {errors.quantity && (
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.quantity.message}
+                </p>
+              )}
+            </div>
+          </form>
         </div>
 
         {/* Footer */}
@@ -210,7 +219,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose }) =>
           </button>
           <button
             onClick={handleSubmit(onSubmit)}
-            disabled={createInventoryProduct.isPending || isLoading}
+            disabled={createInventoryProduct.isPending}
             className="flex items-center space-x-2 px-6 py-2 bg-[#090040] text-white rounded-lg hover:bg-[#090040]/90 disabled:opacity-50 transition-colors"
           >
             <Save className="h-4 w-4" />
