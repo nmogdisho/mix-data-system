@@ -24,7 +24,7 @@ const MixEntryPage: React.FC = () => {
             className="flex items-center space-x-2 px-4 py-2 bg-[#090040] text-white rounded-lg hover:bg-[#090040]/90 transition-colors"
           >
             <Plus className="h-4 w-4" />
-            <span>Add Product</span>
+            <span>Add One Product</span>
           </button>
         </div>
         <MixEntryForm />
