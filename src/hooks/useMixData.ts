@@ -64,7 +64,7 @@ export const useCreateMixData = () => {
   return useMutation({
     mutationFn: async (formData: FormData) => {
       // Generate a valid UUID for anonymous records
-      const userId = crypto.randomUUID();
+      const userId = '67b64cb8-f339-4c05-8819-691731f8b864'
 
       const dbData = transformToDatabase(formData, userId);
 
