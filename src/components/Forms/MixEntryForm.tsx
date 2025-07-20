@@ -19,6 +19,16 @@ const MixEntryForm: React.FC = () => {
   const { data: products, isLoading: productsLoading, error: productsError } = useProducts();
   const { data: colors, isLoading: colorsLoading, error: colorsError } = useColors();
 
+  // Debug logging
+  React.useEffect(() => {
+    console.log('MixEntryForm - Products data:', products);
+    console.log('MixEntryForm - Colors data:', colors);
+    console.log('MixEntryForm - Products loading:', productsLoading);
+    console.log('MixEntryForm - Colors loading:', colorsLoading);
+    console.log('MixEntryForm - Products error:', productsError);
+    console.log('MixEntryForm - Colors error:', colorsError);
+  }, [products, colors, productsLoading, colorsLoading, productsError, colorsError]);
+
   const {
     register,
     handleSubmit,

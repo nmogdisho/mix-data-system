@@ -1,10 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '../lib/supabase';
 import type { InventoryProduct } from '../types';
 
-// Local storage key for inventory products
+// For now, we'll continue using localStorage for inventory products
+// since they're not part of the main database schema
+// This can be moved to database later if needed
+
 const INVENTORY_STORAGE_KEY = 'inventory-products';
 
-// Helper functions for local storage
 const getStoredInventoryProducts = (): InventoryProduct[] => {
   try {
     const stored = localStorage.getItem(INVENTORY_STORAGE_KEY);
@@ -26,14 +29,8 @@ export const useInventoryProducts = () => {
   return useQuery({
     queryKey: ['inventoryProducts'],
     queryFn: async () => {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
       const data = getStoredInventoryProducts();
-      
-      // Sort by timestamp (newest first)
       data.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-      
       return data;
     },
   });
@@ -44,9 +41,6 @@ export const useCreateInventoryProduct = () => {
 
   return useMutation({
     mutationFn: async (productData: { productType: string; color: string; quantity: number }) => {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 300));
-
       const newProduct: InventoryProduct = {
         id: Date.now().toString(),
         productType: productData.productType,
@@ -73,9 +67,6 @@ export const useDeleteInventoryProduct = () => {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 200));
-
       const existingData = getStoredInventoryProducts();
       const updatedData = existingData.filter(item => item.id !== id);
       setStoredInventoryProducts(updatedData);

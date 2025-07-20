@@ -30,6 +30,16 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose }) =>
   const { data: products, isLoading: productsLoading, error: productsError } = useProducts();
   const { data: colors, isLoading: colorsLoading, error: colorsError } = useColors();
 
+  // Debug logging
+  React.useEffect(() => {
+    console.log('Products data:', products);
+    console.log('Colors data:', colors);
+    console.log('Products loading:', productsLoading);
+    console.log('Colors loading:', colorsLoading);
+    console.log('Products error:', productsError);
+    console.log('Colors error:', colorsError);
+  }, [products, colors, productsLoading, colorsLoading, productsError, colorsError]);
+
   const createInventoryProduct = useCreateInventoryProduct();
 
   const {

@@ -1,100 +1,73 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '../lib/supabase';
 import type { MixData, FormData } from '../types';
 
-// Mock data for demonstration
-const mockMixData: MixData[] = [
-  {
-    id: '1',
-    timestamp: new Date().toISOString(),
-    mixType: 'interlock',
-    measurements: {
-      cement: 350,
-      aggregate: 1200,
-      sand: 800,
-      water: 175,
-      plastizer: 5,
-      colorType: 'Red',
-      colorQuantity: 25,
-      products: [
-        { type: 'Block Interlock', quantity: 100 },
-        { type: 'Garden', quantity: 50 }
-      ],
-    },
-    createdBy: 'demo-user',
-    lastModified: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    timestamp: new Date(Date.now() - 86400000).toISOString(), // Yesterday
-    mixType: 'boards/tiir',
-    measurements: {
-      cement: 400,
-      aggregate: 1100,
-      sand: 750,
-      water: 200,
-      plastizer: 8,
-      birta: 50,
-      colorType: 'White',
-      colorQuantity: 30,
-      products: [
-        { type: 'Tiir', quantity: 200 },
-        { type: 'Boards', quantity: 150 }
-      ],
-    },
-    createdBy: 'demo-user',
-    lastModified: new Date(Date.now() - 86400000).toISOString(),
-  },
-];
-
-// Local storage key
-const STORAGE_KEY = 'concrete-mix-data';
-
-// Helper functions for local storage
-const getStoredData = (): MixData[] => {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : mockMixData;
-  } catch {
-    return mockMixData;
-  }
+// Transform database data to application format
+const transformFromDatabase = (dbData: any): MixData => {
+  return {
+    id: dbData.id,
+    timestamp: dbData.timestamp,
+    mixType: dbData.mixtype,
+    measurements: dbData.measurements,
+    createdBy: dbData.createdby,
+    lastModified: dbData.lastmodified,
+  };
 };
 
-const setStoredData = (data: MixData[]) => {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  } catch (error) {
-    console.error('Failed to save data to localStorage:', error);
-  }
+// Transform application data to database format
+const transformToDatabase = (appData: FormData, userId: string) => {
+  return {
+    mixtype: appData.mixType,
+    measurements: {
+      cement: appData.cement,
+      aggregate: appData.aggregate,
+      sand: appData.sand,
+      water: appData.water,
+      plastizer: appData.plastizer,
+      colorType: appData.colorType || 'No Color',
+      colorQuantity: appData.colorQuantity,
+      ...(appData.birta !== undefined && { birta: appData.birta }),
+      ...(appData.products && { products: appData.products }),
+    },
+    createdby: userId,
+  };
 };
 
 export const useMixData = (page = 1, pageSize = 25, filters?: any) => {
   return useQuery({
     queryKey: ['mixData', page, pageSize, filters],
     queryFn: async () => {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      let data = getStoredData();
+      let query = supabase
+        .from('mix_data')
+        .select('*')
+        .order('timestamp', { ascending: false });
 
       // Apply filters
       if (filters?.mixType) {
-        data = data.filter(item => item.mixType === filters.mixType);
+        query = query.eq('mixtype', filters.mixType);
       }
 
-      // Sort by timestamp (newest first)
-      data.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-
-      // Pagination
+      // Apply pagination
       const from = (page - 1) * pageSize;
-      const to = from + pageSize;
-      const paginatedData = data.slice(from, to);
+      const to = from + pageSize - 1;
+      query = query.range(from, to);
+
+      const { data, error, count } = await query;
+
+      if (error) {
+        throw new Error(`Failed to fetch mix data: ${error.message}`);
+      }
+
+      const transformedData = data?.map(transformFromDatabase) || [];
 
       return {
-        data: paginatedData,
-        count: data.length,
-        totalPages: Math.ceil(data.length / pageSize),
+        data: transformedData,
+        count: count || 0,
+        totalPages: Math.ceil((count || 0) / pageSize),
       };
     },
+    retry: 3,
+    staleTime: 2 * 60 * 1000, // 2 minutes
   });
 };
 
@@ -103,33 +76,23 @@ export const useCreateMixData = () => {
 
   return useMutation({
     mutationFn: async (formData: FormData) => {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Get current user (for now, use a demo user ID)
+      const { data: { user } } = await supabase.auth.getUser();
+      const userId = user?.id || 'demo-user-id';
 
-      const newMixData: MixData = {
-        id: Date.now().toString(),
-        mixType: formData.mixType,
-        measurements: {
-          cement: formData.cement,
-          aggregate: formData.aggregate,
-          sand: formData.sand,
-          water: formData.water,
-          plastizer: formData.plastizer,
-          colorType: formData.colorType || 'No Color', // Default to "No Color" if empty
-          colorQuantity: formData.colorQuantity,
-          ...(formData.birta !== undefined && { birta: formData.birta }),
-          ...(formData.products && { products: formData.products }),
-        },
-        createdBy: 'demo-user',
-        timestamp: new Date().toISOString(),
-        lastModified: new Date().toISOString(),
-      };
+      const dbData = transformToDatabase(formData, userId);
 
-      const existingData = getStoredData();
-      const updatedData = [newMixData, ...existingData];
-      setStoredData(updatedData);
+      const { data, error } = await supabase
+        .from('mix_data')
+        .insert([dbData])
+        .select()
+        .single();
 
-      return newMixData;
+      if (error) {
+        throw new Error(`Failed to create mix data: ${error.message}`);
+      }
+
+      return transformFromDatabase(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mixData'] });
@@ -142,34 +105,27 @@ export const useUpdateMixData = () => {
 
   return useMutation({
     mutationFn: async ({ id, formData }: { id: string; formData: FormData }) => {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      const userId = user?.id || 'demo-user-id';
 
-      const existingData = getStoredData();
-      const updatedData = existingData.map(item => {
-        if (item.id === id) {
-          return {
-            ...item,
-            mixType: formData.mixType,
-            measurements: {
-              cement: formData.cement,
-              aggregate: formData.aggregate,
-              sand: formData.sand,
-              water: formData.water,
-              plastizer: formData.plastizer,
-              colorType: formData.colorType || 'No Color', // Default to "No Color" if empty
-              colorQuantity: formData.colorQuantity,
-              ...(formData.birta !== undefined && { birta: formData.birta }),
-              ...(formData.products && { products: formData.products }),
-            },
-            lastModified: new Date().toISOString(),
-          };
-        }
-        return item;
-      });
+      const dbData = transformToDatabase(formData, userId);
 
-      setStoredData(updatedData);
-      return updatedData.find(item => item.id === id);
+      const { data, error } = await supabase
+        .from('mix_data')
+        .update({
+          ...dbData,
+          lastmodified: new Date().toISOString(),
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(`Failed to update mix data: ${error.message}`);
+      }
+
+      return transformFromDatabase(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mixData'] });
@@ -182,12 +138,14 @@ export const useDeleteMixData = () => {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 300));
+      const { error } = await supabase
+        .from('mix_data')
+        .delete()
+        .eq('id', id);
 
-      const existingData = getStoredData();
-      const updatedData = existingData.filter(item => item.id !== id);
-      setStoredData(updatedData);
+      if (error) {
+        throw new Error(`Failed to delete mix data: ${error.message}`);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mixData'] });
