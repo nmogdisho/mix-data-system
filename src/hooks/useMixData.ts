@@ -3,38 +3,34 @@ import { supabase } from '../lib/supabase';
 import type { MixData, FormData } from '../types';
 
 // Transform database data to application format
-const transformFromDatabase = (dbData: any): MixData => {
-  return {
-    id: dbData.id,
-    timestamp: dbData.timestamp,
-    mixType: dbData.mixtype,
-    measurements: dbData.measurements,
-    createdBy: dbData.createdby,
-    lastModified: dbData.lastmodified,
-  };
-};
+const transformFromDatabase = (dbData: any): MixData => ({
+  id: dbData.id,
+  timestamp: dbData.timestamp,
+  mixType: dbData.mixtype,
+  measurements: dbData.measurements,
+  createdBy: dbData.createdby,
+  lastModified: dbData.lastmodified,
+});
 
 // Transform application data to database format
-const transformToDatabase = (appData: FormData, userId: string) => {
-  return {
-    mixtype: appData.mixType,
-    measurements: {
-      cement: appData.cement,
-      aggregate: appData.aggregate,
-      sand: appData.sand,
-      water: appData.water,
-      plastizer: appData.plastizer,
-      colorType: appData.colorType || 'No Color',
-      colorQuantity: appData.colorQuantity,
-      ...(appData.birta !== undefined && { birta: appData.birta }),
-      ...(appData.products && { products: appData.products }),
-    },
-    createdby: userId,
-  };
-};
+const transformToDatabase = (appData: FormData, userId: string) => ({
+  mixtype: appData.mixType,
+  measurements: {
+    cement: appData.cement,
+    aggregate: appData.aggregate,
+    sand: appData.sand,
+    water: appData.water,
+    plastizer: appData.plastizer,
+    colorType: appData.colorType || 'No Color',
+    colorQuantity: appData.colorQuantity,
+    ...(appData.birta !== undefined && { birta: appData.birta }),
+    ...(appData.products && { products: appData.products }),
+  },
+  createdby: userId,
+});
 
-export const useMixData = (page = 1, pageSize = 25, filters?: any) => {
-  return useQuery({
+export const useMixData = (page = 1, pageSize = 25, filters?: any) =>
+  useQuery({
     queryKey: ['mixData', page, pageSize, filters],
     queryFn: async () => {
       let query = supabase
@@ -42,24 +38,16 @@ export const useMixData = (page = 1, pageSize = 25, filters?: any) => {
         .select('*')
         .order('timestamp', { ascending: false });
 
-      // Apply filters
-      if (filters?.mixType) {
-        query = query.eq('mixtype', filters.mixType);
-      }
+      if (filters?.mixType) query = query.eq('mixtype', filters.mixType);
 
-      // Apply pagination
       const from = (page - 1) * pageSize;
       const to = from + pageSize - 1;
       query = query.range(from, to);
 
       const { data, error, count } = await query;
-
-      if (error) {
-        throw new Error(`Failed to fetch mix data: ${error.message}`);
-      }
+      if (error) throw new Error(`Failed to fetch mix data: ${error.message}`);
 
       const transformedData = data?.map(transformFromDatabase) || [];
-
       return {
         data: transformedData,
         count: count || 0,
@@ -67,18 +55,16 @@ export const useMixData = (page = 1, pageSize = 25, filters?: any) => {
       };
     },
     retry: 3,
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    staleTime: 2 * 60 * 1000,
   });
-};
 
 export const useCreateMixData = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (formData: FormData) => {
-      // Get current user (for now, use a demo user ID)
-      const { data: { user } } = await supabase.auth.getUser();
-      const userId = user?.id || 'demo-user-id';
+      // Generate a valid UUID for anonymous records
+      const userId = crypto.randomUUID();
 
       const dbData = transformToDatabase(formData, userId);
 
@@ -105,9 +91,9 @@ export const useUpdateMixData = () => {
 
   return useMutation({
     mutationFn: async ({ id, formData }: { id: string; formData: FormData }) => {
-      // Get current user
+      // Get current user (if you still need a real user, otherwise remove this block)
       const { data: { user } } = await supabase.auth.getUser();
-      const userId = user?.id || 'demo-user-id';
+      const userId = user?.id ?? crypto.randomUUID();
 
       const dbData = transformToDatabase(formData, userId);
 
