@@ -92,8 +92,8 @@ export const useUpdateMixData = () => {
   return useMutation({
     mutationFn: async ({ id, formData }: { id: string; formData: FormData }) => {
       // Get current user (if you still need a real user, otherwise remove this block)
-      const { data: { user } } = await supabase.auth.getUser();
-      const userId = user?.id ?? crypto.randomUUID();
+      // const { data: { user } } = await supabase.auth.getUser();
+      const userId = '67b64cb8-f339-4c05-8819-691731f8b864'
 
       const dbData = transformToDatabase(formData, userId);
 
