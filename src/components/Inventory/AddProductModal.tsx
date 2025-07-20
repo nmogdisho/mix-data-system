@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { X, Save, AlertCircle, CheckCircle, Package } from 'lucide-react';
 import { useCreateInventoryProduct } from '../../hooks/useInventoryProducts';
+import { useProducts, useColors } from '../../hooks/useValidationData';
 
 interface AddProductModalProps {
   isOpen: boolean;
@@ -25,25 +26,9 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose }) =>
     message: string;
   } | null>(null);
 
-  // Use fallback data directly since database might not be available in deployment
-  const products = [
-    { id: '1', name: 'Block Interlock', category: 'Interlock' },
-    { id: '2', name: 'Buuor Interlock', category: 'Interlock' },
-    { id: '3', name: 'Daimond Interlock', category: 'Interlock' },
-    { id: '4', name: 'Tiiba Talyaani Interlock', category: 'Interlock' },
-    { id: '5', name: 'York Shir Interlock', category: 'Interlock' },
-    { id: '6', name: 'Garden', category: 'Interlock' },
-    { id: '7', name: 'Tiir', category: 'Board/Tiir' },
-    { id: '8', name: 'Boards', category: 'Board/Tiir' },
-  ];
-
-  const colors = [
-    { id: '1', name: 'Red' },
-    { id: '2', name: 'Pure Red' },
-    { id: '3', name: 'White' },
-    { id: '4', name: 'Black' },
-    { id: '5', name: 'Yellow' },
-  ];
+  // Fetch products and colors from database
+  const { data: products, isLoading: productsLoading, error: productsError } = useProducts();
+  const { data: colors, isLoading: colorsLoading, error: colorsError } = useColors();
 
   const createInventoryProduct = useCreateInventoryProduct();
 
@@ -109,6 +94,26 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose }) =>
 
         {/* Content */}
         <div className="p-6">
+          {/* Loading State */}
+          {(productsLoading || colorsLoading) && (
+            <div className="flex justify-center items-center h-32">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#090040]"></div>
+              <span className="ml-3 text-gray-600">Loading products and colors...</span>
+            </div>
+          )}
+
+          {/* Error State */}
+          {(productsError || colorsError) && (
+            <div className="mb-6 p-4 rounded-lg bg-red-50 border border-red-200">
+              <div className="flex items-center space-x-3">
+                <AlertCircle className="h-5 w-5 text-red-600" />
+                <span className="text-sm font-medium text-red-800">
+                  Failed to load products or colors from database
+                </span>
+              </div>
+            </div>
+          )}
+
           {/* Notification */}
           {notification && (
             <div className={`mb-6 p-4 rounded-lg flex items-center space-x-3 ${
@@ -129,7 +134,9 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose }) =>
             </div>
           )}
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {/* Only show form when data is loaded */}
+          {!productsLoading && !colorsLoading && products && colors && (
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* Product Type */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -207,6 +214,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose }) =>
               )}
             </div>
           </form>
+          )}
         </div>
 
         {/* Footer */}
@@ -220,11 +228,17 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose }) =>
           <button
             onClick={handleSubmit(onSubmit)}
             disabled={createInventoryProduct.isPending}
+            disabled={createInventoryProduct.isPending || productsLoading || colorsLoading || !products || !colors}
             className="flex items-center space-x-2 px-6 py-2 bg-[#090040] text-white rounded-lg hover:bg-[#090040]/90 disabled:opacity-50 transition-colors"
           >
             <Save className="h-4 w-4" />
             <span>
-              {createInventoryProduct.isPending ? 'Adding...' : 'Add Product'}
+              {createInventoryProduct.isPending 
+                ? 'Adding...' 
+                : (productsLoading || colorsLoading) 
+                  ? 'Loading...' 
+                  : 'Add Product'
+              }
             </span>
           </button>
         </div>
